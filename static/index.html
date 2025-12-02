@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>집중도우미 AI튜터</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui;
+        background: #f9fafb;
+        color: #111827;
+        margin: 0;
+        padding: 24px;
+      }
+
+      h1 {
+        margin: 0 0 4px 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .sub {
+        margin: 0 0 20px 0;
+        font-size: 0.9rem;
+        color: #6b7280;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 16px 18px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+      }
+
+      .card h2,
+      .card h3 {
+        margin: 0 0 12px 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      #cam {
+        width: 100%;
+        max-width: 360px;
+        border-radius: 12px;
+        background: #111827;
+        display: block;
+        transform: scaleX(-1);
+      }
+
+      label {
+        font-size: 0.85rem;
+        color: #6b7280;
+      }
+
+      input[type="text"] {
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        color: #111827;
+        min-width: 220px;
+        outline: none;
+      }
+      input[type="text"]:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+        background: #ffffff;
+      }
+
+      button {
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .btn-start {
+        background: #22c55e;
+        color: #064e3b;
+      }
+      .btn-stop {
+        background: #ef4444;
+        color: #fef2f2;
+      }
+      .btn-snap {
+        background: #3b82f6;
+        color: #eff6ff;
+      }
+      .btn-cali {
+        background: #f97316;
+        color: #7c2d12;
+      }
+
+      .btn-ghost {
+        background: #f3f4f6;
+        color: #374151;
+      }
+
+      .row-inline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 10px;
+        align-items: center;
+      }
+
+      .hint {
+        font-size: 0.8rem;
+        color: #4b5563;
+        margin-top: 6px;
+      }
+
+      .hint strong {
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+      }
+      .metric .label {
+        display: block;
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-bottom: 2px;
+      }
+      .metric .value {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #111827;
+      }
+
+      ul {
+        padding-left: 18px;
+        margin: 0;
+      }
+      li {
+        font-size: 0.82rem;
+        color: #374151;
+      }
+
+      pre {
+        background: #f9fafb;
+        border-radius: 10px;
+        padding: 8px 10px;
+        border: 1px solid #e5e7eb;
+        overflow: auto;
+        font-size: 0.75rem;
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+      }
+
+      .cali-state {
+        font-size: 0.8rem;
+        color: #0f172a;
+        margin-top: 4px;
+      }
+
+      @media (max-width: 960px) {
+        .layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header style="margin-bottom: 16px;">
+      <h1>집중도우미 AI튜터</h1>
+    </header>
+
+    <div class="layout">
+      <!-- 좌측: 카메라 + 유저/캘리브레이션 -->
+      <div class="left-col" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- 사용자 카드 -->
+        <div class="card">
+          <h2>사용자 & 제어</h2>
+          <div class="row-inline" style="margin-bottom: 8px;">
+            <div>
+              <label for="username">사용자 이름</label><br />
+              <input id="username" type="text" placeholder="예: 홍길동" />
+            </div>
+            <div class="row-inline">
+              <button class="btn-start" onclick="onStart()">시작</button>
+              <button class="btn-stop" onclick="onStop()">중지</button>
+              <!-- <button class="btn-snap" onclick="onSnapshot()">
+                현재 이미지 저장
+              </button>
+              <button class="btn-ghost" onclick="window.location.href='/api/download_log'">
+                CSV 다운로드
+              </button> -->
+            </div>
+          </div>
+          <div class="hint">
+            브라우저에서 캡처한 프레임만 서버로 전송되며, 원본 영상은 로컬에만 표시됩니다.
+          </div>
+        </div>
+
+        <!-- 캘리브레이션 카드 -->
+        <div class="card">
+          <h2>캘리브레이션</h2>
+          <button class="btn-cali" style="width: 100%; justify-content: center;" onclick="onCalibrate()">
+            캘리브레이션 시작
+          </button>
+          <div id="caliState" class="cali-state"></div>
+          <p class="hint" style="color:#111827; font-size:0.9rem; margin-top:10px;">
+            ※ <strong>시작 → 캘리브레이션</strong> 순서로 진행해주세요.<br/>
+            &nbsp;&nbsp;왼쪽 위 → 오른쪽 위 → 오른쪽 아래 → 왼쪽 아래 → 중앙 순서로 1초씩 바라봐 주세요.
+          </p>
+        </div>
+
+        <!-- 카메라 카드 -->
+        <div class="card">
+          <h2>Live Camera</h2>
+          <video id="cam" autoplay playsinline></video>
+          <p class="hint" style="margin-top:8px;">
+            이 영상은 <strong>로컬 PC</strong>에서만 보입니다. 서버에는 프레임 이미지 데이터만 전송됩니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- 우측: 지표 & 로그 -->
+      <div class="right-col" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- 집중도 카드 -->
+        <div class="card">
+          <h2>
+            집중도 요약
+            <span class="pill">F = G(0.4) + N(0.3) + E(0.2) + B(0.1)</span>
+          </h2>
+          <div class="metrics-grid">
+            <div class="metric">
+              <span class="label">F (현재)</span>
+              <span id="focusNow" class="value">0%</span>
+            </div>
+            <div class="metric">
+              <span class="label">10초 평균</span>
+              <span id="avg10" class="value">0%</span>
+            </div>
+            <div class="metric">
+              <span class="label">1분 평균</span>
+              <span id="avg60" class="value">0%</span>
+            </div>
+            <div class="metric">
+              <span class="label">10분 평균</span>
+              <span id="avg600" class="value">0%</span>
+            </div>
+            <div class="metric">
+              <span class="label">시선 (Gaze)</span>
+              <span id="gazeNow" class="value">0%</span>
+            </div>
+            <div class="metric">
+              <span class="label">목 자세 (Neck)</span>
+              <span id="neckNow" class="value">0%</span>
+            </div>
+            <div class="metric">
+              <span class="label">감정 (Emotion)</span>
+              <span id="emoNow" class="value">0%</span>
+            </div>
+            <div class="metric">
+              <span class="label">눈깜빡임 (Blink)</span>
+              <span id="blinkNow" class="value">0%</span>
+            </div>
+            <div class="metric">
+              <span class="label">FPS</span>
+              <span id="fps" class="value">0</span>
+            </div>
+            <div class="metric">
+              <span class="label">Frames</span>
+              <span id="frames" class="value">0</span>
+            </div>
+            <div class="metric">
+              <span class="label">저장된 이미지</span>
+              <span id="saved" class="value">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 감정 & 디테일 카드 -->
+        <div class="card">
+          <h2>감정 빈도수 랭킹 (세션 기준)</h2>
+          <ul id="emotionRank">
+            <li>데이터 없음</li>
+          </ul>
+
+          <h3 style="margin-top: 12px;">Latest Detail</h3>
+          <pre id="latest">waiting...</pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let userName = "";
+      let stream = null;
+      let captureTimer = null;
+      let socket = null;
+      const emotionCount = {};
+
+      function pct(x) {
+        return Math.round((x || 0) * 100) + "%";
+      }
+
+      function buildWsUrl() {
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        const base = proto + "://" + location.host + "/ws/frame";
+        if (userName) {
+          return base + "?user=" + encodeURIComponent(userName);
+        }
+        return base;
+      }
+
+      async function startCameraIfNeeded() {
+        if (stream) return;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const video = document.getElementById("cam");
+          video.srcObject = stream;
+        } catch (e) {
+          alert("카메라 접근 실패: " + e);
+        }
+      }
+
+      function stopCameraCapture() {
+        if (captureTimer) {
+          clearInterval(captureTimer);
+          captureTimer = null;
+        }
+      }
+
+      function stopCameraStream() {
+        if (stream) {
+          stream.getTracks().forEach((t) => t.stop());
+          stream = null;
+        }
+        const video = document.getElementById("cam");
+        video.srcObject = null;
+      }
+
+      async function sendFrame() {
+        const video = document.getElementById("cam");
+        if (!video.videoWidth || !video.videoHeight) return;
+        if (!userName) return;
+        if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 320;
+        canvas.height = 240;
+
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, -320, 0, 320, 240);
+        ctx.restore();
+
+        const blob = await new Promise((res) =>
+          canvas.toBlob(res, "image/jpeg", 0.7)
+        );
+
+        if (blob && socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(blob);
+        }
+      }
+
+      function applyLiveUpdate(payload) {
+        const live = payload.live || {};
+        const sess = payload.session || {};
+
+        const caliStateEl = document.getElementById("caliState");
+        if (caliStateEl) {
+          caliStateEl.innerText = live.calibrating
+            ? "캘리브레이션 진행중 → 현재 타겟: " + (live.calib_target || "")
+            : "캘리브레이션 대기";
+        }
+
+        const focusArr = live.focus || [];
+        const latest = live.latest || {};
+
+        if (focusArr.length > 0) {
+          document.getElementById("focusNow").innerText = pct(
+            focusArr[focusArr.length - 1]
+          );
+        }
+
+        document.getElementById("avg10").innerText = pct(live.avg_10s);
+        document.getElementById("avg60").innerText = pct(live.avg_1m);
+        document.getElementById("avg600").innerText = pct(live.avg_10m);
+
+        document.getElementById("gazeNow").innerText = pct(latest.gaze);
+        document.getElementById("neckNow").innerText = pct(latest.neck);
+        document.getElementById("emoNow").innerText = pct(latest.emotion_score);
+        document.getElementById("blinkNow").innerText = pct(latest.blink_score);
+
+        document.getElementById("fps").innerText =
+          live.fps && live.fps.toFixed ? live.fps.toFixed(1) : (live.fps || 0);
+        document.getElementById("frames").innerText = sess.frames || 0;
+        document.getElementById("saved").innerText = sess.saved || 0;
+
+        const latestCopy = { ...latest };
+        ["focus", "gaze", "neck", "emotion_score", "blink_score"].forEach(
+          (k) => {
+            if (latestCopy[k] != null)
+              latestCopy[k] = (latestCopy[k] * 100).toFixed(1) + "%";
+          }
+        );
+
+        document.getElementById("latest").innerText = JSON.stringify(
+          latestCopy,
+          null,
+          2
+        );
+
+        const topEmotion = latest.top_emotion;
+        if (topEmotion)
+          emotionCount[topEmotion] = (emotionCount[topEmotion] || 0) + 1;
+
+        const rankList = Object.entries(emotionCount)
+          .sort((a, b) => b[1] - a[1])
+          .map(([k, v]) => `<li>${k}: ${v}회</li>`)
+          .join("");
+
+        document.getElementById("emotionRank").innerHTML =
+          rankList || "<li>데이터 없음</li>";
+      }
+
+      function connectSocket() {
+        if (socket && socket.readyState === WebSocket.OPEN) return;
+
+        socket = new WebSocket(buildWsUrl());
+
+        socket.onopen = () => {
+          console.log("WebSocket 연결됨");
+          if (!captureTimer) captureTimer = setInterval(sendFrame, 200);
+        };
+
+        socket.onclose = () => {
+          console.log("WebSocket 종료");
+          stopCameraCapture();
+          socket = null;
+        };
+
+        socket.onerror = (e) => {
+          console.error("WebSocket 오류", e);
+        };
+
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "update") {
+              applyLiveUpdate(data);
+            }
+          } catch (e) {
+            console.error("메시지 파싱 실패", e);
+          }
+        };
+      }
+
+      async function onStart() {
+        const name = document.getElementById("username").value.trim();
+        if (!name) {
+          alert("사용자 이름을 먼저 입력해주세요.");
+          return;
+        }
+        userName = name;
+        await startCameraIfNeeded();
+        connectSocket();
+      }
+
+      function onStop() {
+        stopCameraCapture();
+        stopCameraStream();
+        if (socket) {
+          try { socket.close(); } catch (e) {}
+          socket = null;
+        }
+        userName = "";
+      }
+
+      async function onSnapshot() {
+        if (!userName) {
+          alert("사용자 이름을 먼저 입력하고 시작하세요.");
+          return;
+        }
+        const res = await fetch("/api/snapshot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user: userName }),
+        });
+        const j = await res.json();
+        alert(j.ok ? "저장 완료" : "저장할 프레임이 없습니다.");
+      }
+
+      async function onCalibrate() {
+        const j = await (
+          await fetch("/api/calibrate/start", { method: "POST" })
+        ).json();
+        if (!j.ok) alert("캘리브레이션 시작 실패");
+      }
+    </script>
+  </body>
+</html>
+

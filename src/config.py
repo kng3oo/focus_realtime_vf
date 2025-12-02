@@ -1,0 +1,27 @@
+# config.py
+WEIGHTS = dict(gaze=0.40, neck=0.30, emotion=0.20, blink=0.10)
+
+# Calibration
+CALIB_POINTS = ["UL", "UR", "LR", "LL", "CTR"]
+CALIB_HOLD_SEC = 2.0
+ALLOW_MIN_YAW_DEG = 5.0
+ALLOW_MIN_PITCH_DEG = 3.0
+ALLOW_MIN_ROLL_DEG = 5.0
+
+# Smoothing & penalties
+EMA_SEC_DISPLAY = 2.0
+CAMERA_LOOK_UP_DEG = +10.0
+BOOK_LOOK_DOWN_DEG = -30.0
+CAMERA_PENALTY = 0.7
+BOOK_PENALTY = 0.5
+
+# Neck warnings
+NECK_DEEP_BEND_DEG = 35.0
+
+# Quality
+QUALITY_EXPONENT = 0.7
+
+# Blink
+PERCLOS_WINDOW_SEC = 30.0
+EAR_SMOOTH_SEC = 0.3
+
